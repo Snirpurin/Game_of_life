@@ -1,4 +1,5 @@
 use rand::*;
+use std::thread;
 
 const GRID_SIZE: usize = 30;
 
@@ -13,6 +14,7 @@ struct State {
 
 }
 
+
 #[derive(Clone, Copy)]
 struct Cell {
     alive: bool,
@@ -22,31 +24,47 @@ struct Cell {
 
 
 fn main() {
-    
+    let mut threads = vec![];
+
+  for _ in 0..4{
+      threads.push(thread::spawn(move || -> State {
+          worker()
+      }));
+  }
+  let mut states = vec![];
+for thread in threads {
+    let holder = thread.join().unwrap();
+    states.push(holder);
+} 
+for stuf in states{
+  for x in 1..(GRID_SIZE - 1){
+    for y in 1..(GRID_SIZE - 1){
+        if stuf.start_array[x][y].alive{
+            print!("1  ",);
+        }
+        else{
+            print!("0  ",);
+        }
+    }
+    println!("");
+}
+println!("Cycles: {}", stuf.cycles - 5);
+}
+
+
+
+}
+
+fn worker() -> State{
     let mut state = random_init();
-
     state.start_array = state.array.clone();
-
     init_matrix(&mut state.array);
 
     while !state_coontrol(&mut state) {
         update_numbers(&mut state);
     }
 
-    println!("");
-        for x in 1..(GRID_SIZE - 1){
-            for y in 1..(GRID_SIZE - 1){
-                if state.start_array[x][y].alive{
-                    print!("1  ",);
-                }
-                else{
-                    print!("0  ",);
-                }
-            }
-            println!("");
-        }
-        println!("Cycles: {}", state.cycles - 5);
-
+    state
 
 
 }

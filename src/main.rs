@@ -1,5 +1,10 @@
 use rand::*;
 use std::thread;
+use std::io;
+use std::error::Error;
+use std::fs::File;
+use std::io::prelude::*;
+use std::path::Path;
 
 const GRID_SIZE: usize = 30;
 
@@ -32,27 +37,41 @@ fn main() {
       }));
   }
   let mut states = vec![];
-for thread in threads {
-    let holder = thread.join().unwrap();
-    states.push(holder);
-} 
-for stuf in states{
-  for x in 1..(GRID_SIZE - 1){
-    for y in 1..(GRID_SIZE - 1){
-        if stuf.start_array[x][y].alive{
-            print!("1  ",);
-        }
-        else{
-            print!("0  ",);
-        }
-    }
-    println!("");
+    for thread in threads {
+        let holder = thread.join().unwrap();
+        states.push(holder);
+    } 
+
+
+    println!("Press: \n 1: print cycle");
+let mut input = String::new();
+match io::stdin().read_line(&mut input){
+    Ok(n) =>{},
+    Err(j) => print!("Error happend"),
 }
-println!("Cycles: {}", stuf.cycles - 5);
+ match input.trim().parse::<i32>().expect("sss") {
+     1 => print_arrays(&states),
+     _=> println!("No more, now sleep"),
+
+ }
+
+
 }
-
-
-
+fn print_arrays(states: & Vec<State>) {
+    for stuf in states{
+        for x in 1..(GRID_SIZE - 1){
+            for y in 1..(GRID_SIZE - 1){
+                if stuf.start_array[x][y].alive{
+                    print!("1  ",);
+                }
+                else{
+                    print!("0  ",);
+                }
+            }
+            println!("");
+            }
+            println!("Cycles: {}", stuf.cycles - 5);
+        }
 }
 
 fn worker() -> State{

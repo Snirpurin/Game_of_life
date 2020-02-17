@@ -28,9 +28,20 @@ struct Cell {
 
 
 
-fn main() {
-    let mut threads = vec![];
+impl State {
+    
+}
 
+
+fn main() {
+
+    
+
+    let mut threads = vec![];
+    // || is the closure, which means that inside the closure we have the same state as the main has, and can therfor use items
+    // that are in the main scope
+    //closures can be saved to variables, but is not done here
+    //ex: let clos = |T| -> T { code here};
   for _ in 0..4{
       threads.push(thread::spawn(move || -> State {
           worker()

@@ -5,6 +5,7 @@ use std::error::Error;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
+use std::sync::mpsc;
 
 const GRID_SIZE: usize = 30;
 
@@ -20,17 +21,25 @@ struct State {
 }
 
 
+
 #[derive(Clone, Copy)]
 struct Cell {
     alive: bool,
     cell_around: i32,
 }
 
-
-
-impl State {
-    
+struct GenVal<T> where T: Fn(i32) -> i32 {
+    item: T,
 }
+
+impl<T> GenVal<T> where T: Fn(i32) -> i32{
+    fn new(some: T) -> GenVal<T>{
+        GenVal{item: some}
+
+    }
+}
+
+
 
 
 fn main() {
@@ -38,20 +47,30 @@ fn main() {
     
 
     let mut threads = vec![];
+    let array = [1,2,3,1];
+    let (tx, rx) = mpsc::channel();
     // || is the closure, which means that inside the closure we have the same state as the main has, and can therfor use items
     // that are in the main scope
     //closures can be saved to variables, but is not done here
     //ex: let clos = |T| -> T { code here};
-  for _ in 0..4{
-      threads.push(thread::spawn(move || -> State {
-          worker()
+  for i in 0..4{
+        //let thraw = i;
+        let temp = mpsc::Sender::clone(&tx);
+      threads.push(thread::spawn(move || {
+          let sender = temp;
+          for _ in 0..10{
+            sender.send(worker()).unwrap();    
+          }
+          
       }));
   }
-  let mut states = vec![];
-    for thread in threads {
-        let holder = thread.join().unwrap();
-        states.push(holder);
-    } 
+let mut states = vec!();
+let mut counter = 0;
+loop{
+    states.push(rx.recv().unwrap());
+    counter += 1;
+    if counter == 40 {break}
+}
 
 
     println!("Press: \n 1: print cycle");
@@ -65,6 +84,7 @@ match io::stdin().read_line(&mut input){
      _=> println!("No more, now sleep"),
 
  }
+
 
 
 }

@@ -46,15 +46,19 @@ struct Data {
     counter: usize,
 }
 
+impl Data {
+    fn new() -> Data{
+        Data {check: false, states: vec!(), counter: 0}
+    }
+}
+
 fn main() {
     let mut threads = vec![];
     let array = [1, 2, 3, 1];
 
     //Use Arc (Atomic reference counter) meaning: that we make the mutex which covers a T, Atomic so we can use that haev multiple owners
     //to the the mutex
-    let states = Arc::new(Mutex::new(vec![]));
-    let check = Arc::new(Mutex::new(false));
-    let counter = Arc::new(Mutex::new(0 as usize));
+    let data = Arc::new(Mutex::new(Data::new()));
 
     //let (tx, rx) = mpsc::channel();
     // || is the closure, which means that inside the closure we have the same state as the main has, and can therfor use items
@@ -64,25 +68,45 @@ fn main() {
     for i in 0..4 {
         //let thraw = i;
         //let sender = mpsc::Sender::clone(&tx);
-        let states = Arc::clone(&states);
-        let check = Arc::clone(&check);
-        let counter = Arc::clone(&counter);
+        let data = Arc::clone(&data);
         threads.push(thread::spawn(move || {
+            let mut count = 0;
+            let mut check = false;
+            println!("start of thread {}", i);
+            let my_id = i;
             loop{
-                for _ in 0..10 {
-                    let mut vec = states.lock().expect("states in thread");
-                    vec.push(worker());
-                    let mut num = counter.lock().expect("counter in thread");
-                    *num += 1;
+                println!("going {}", i);
+
+                let mut list = vec!();
+                println!("made list {}", i);
+                for _ in 0..50 {
+                    
+                    list.push(worker());
+                    count += 1;
 
                 }
-                println!("going");
-                let stop = check.lock().expect("check in thread");
-                if *stop {
+
+                {
+                    println!("about to take lock {}", i);
+                    let mut da = data.lock().expect("states in thread ");
+                    println!("took lock {}", i);
+                    da.counter += count;
+                    count = 0;
+                    check = da.check;
+                    
+                    for st in list {
+                        da.states.push(st);
+                    }
+                }
+                println!("da lifteime ended {}", i);
+                
+                if check {
+                    println!("did break {}", i);
                     break;
                 } 
+                println!("did not break {}", i);
             }
-
+            println!("out {}", i);
         }));
     }
 
@@ -101,21 +125,28 @@ fn main() {
             Ok(n) => {}
             Err(j) => print!("Error happend"),
         }
-        let mut te = check.lock().expect("check int main");
-        println!("just pressed te");
-        let bostate = states.lock().expect("states in main");
-        println!("just pressed bo");
-        let count = counter.lock().expect("counter in main");
-        println!("just pressed count");
+        {
+            println!("main is about to take lock");
+            let mut da = data.lock().expect("states in thread");
+            
 
-        match input.trim().parse::<i32>().expect("sss") {
-            1 => {println!("just pressed 1");
-                print_arrays(&bostate);
-                println!("just pressed 1");},
-            2 => {*te = true;
-                println!("tries: {}", count);},
-            _ => println!("No more, now sleep"),
+            match input.trim().parse::<i32>().expect("sss") {
+                1 => {println!("just pressed 1");
+                    //print_arrays(&da.states);
+                    println!("tries: {}", da.counter);
+                    println!("just pressed 1");},
+                2 => {da.check = true;
+                    println!("tries: {}", da.counter);
+                    break;},
+                _ => println!("No more, now sleep"),
+            }
         }
+    }
+    let mut c = 0;
+    for thread in threads{
+        println!("main is joining thread {}", c);
+        thread.join().unwrap();
+        c +=1;
     }    
 
 }
@@ -141,6 +172,8 @@ fn worker() -> State {
     state.start_array = state.array.clone();
     init_matrix(&mut state.array);
 
+
+    //State control strop the threads hear by getting in a pattern tha does not stop
     while !state_coontrol(&mut state) {
         update_numbers(&mut state);
     }
